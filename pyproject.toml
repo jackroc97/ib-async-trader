@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ib_async_trader"
+version = "0.0.1"
+authors = [
+  { name="Jack Rochester", email="jackroc97@gmail.com" },
+]
+description = "A python library for backtesting and running live strategies using ib_async."
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]

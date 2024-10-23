@@ -1,0 +1,26 @@
+bottle==0.13.2
+eventkit==1.0.3
+ib_async==1.0.3
+ib_async_trader @ file:///Users/jrochester/dev/options_trading/ib-async-trader/dist/ib_async_trader-0.0.1-py3-none-any.whl#sha256=3cc6255d408319cd3a6f119758851a461b4935a6642ea225717a89ed4d669eb6
+iniconfig==2.0.0
+lightweight-charts==2.1
+nest-asyncio==1.6.0
+numpy==2.1.2
+packaging==24.1
+pandas==2.2.3
+pluggy==1.5.0
+proxy_tools==0.1.0
+pyobjc-core==10.3.1
+pyobjc-framework-Cocoa==10.3.1
+pyobjc-framework-Quartz==10.3.1
+pyobjc-framework-Security==10.3.1
+pyobjc-framework-WebKit==10.3.1
+pytest==8.3.3
+python-dateutil==2.9.0.post0
+pytz==2024.2
+pywebview==5.3.2
+PyYAML==6.0.2
+scipy==1.14.1
+six==1.16.0
+typing_extensions==4.12.2
+tzdata==2024.2
