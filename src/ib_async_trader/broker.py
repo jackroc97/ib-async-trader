@@ -7,6 +7,10 @@ class Broker:
         pass
     
     
+    def get_account_values(self) -> list[ib.AccountValue]:
+        pass
+    
+    
     def get_positions(self) -> list[ib.Position]:
         pass
     

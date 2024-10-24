@@ -2,10 +2,8 @@ from datetime import datetime
 
 import pandas as pd
 import ib_async as ib
-from lightweight_charts import Chart
 
 from .broker import Broker
-from .utils.chart_utils import ChartUtils
 
 
 class Strategy:
@@ -22,7 +20,6 @@ class Strategy:
         self.broker: Broker = None
         self.time_now: datetime = None
         self.data: pd.DataFrame = None
-        self.chart: Chart = None
         
         
     def get_data(self, name: str, bars_ago: int = 0) -> any:
@@ -44,8 +41,7 @@ class Strategy:
         # NOTE: If an error is caused here by get_loc returning more than one 
         # value, the most likely culprit is duplicate data.
         #idx = self.data.index.get_loc(self.time_now) - bars_ago
-        loc = self.data.index.get_loc(self.time_now)
-        idx = loc - bars_ago
+        idx = self.data.index.get_loc(self.time_now) - bars_ago
         return self.data.iloc[idx][name]
         
         
@@ -76,21 +72,8 @@ class Strategy:
         sliced["condition"] = sliced.apply(lambda row: conditional(*row.values), axis=1)
         t = sliced.where(sliced["condition"]).last_valid_index()
         return (end_idx - df.index.get_loc(t) - 1) if t else None
-    
-    
-    def update_live_chart(self):
-        """
-        Performs live updates of the chart as the strategy is running.
-        This function is only called if backtest chart options is set to
-        `ChartOptions.LIVE_CHART`.
-        """
-        if self.chart and len(self.chart.data) < 1:
-            ChartUtils.set_chart_data(self.chart, self.data[:self.time_now])
-            self.chart.show()
-        else:
-            ChartUtils.update_chart(self.chart, self.data.loc[self.time_now])
-            
-    
+
+
     async def tick(self):
         """
         The `Strategy.tick()` method is where a user will define the basic logic 
@@ -101,6 +84,10 @@ class Strategy:
         """
         pass
     
+    
+    async def post_tick(self):
+        pass
+        
     
     def on_start(self) -> None:
         pass

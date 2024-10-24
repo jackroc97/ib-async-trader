@@ -10,6 +10,10 @@ class IBLiveTradeBroker(Broker):
         self.ib = ib
             
             
+    def get_account_values(self) -> list[ib.AccountValue]:
+        return self.ib.accountValues()
+    
+            
     def get_positions(self) -> list[ib.Position]:
         return self.ib.positions()
     
@@ -42,6 +46,18 @@ class IBLiveTradeBroker(Broker):
         return await self.ib.whatIfOrderAsync(contract, order)
     
     
-    def place_order(self, contract: ib.Contract, order: ib.Order) -> ib.Trade:
-        return self.ib.placeOrder(contract, order)
+    def place_order(self, contract: ib.Contract, order: ib.Order,
+                    status_event: callable = None, modify_event: callable = None,
+                    fill_event: callable = None, commissionReportEvent: callable = None,
+                    filled_event: callable = None, cancel_event: callable = None,
+                    cancelled_event: callable = None) -> ib.Trade:
+        trade = self.ib.placeOrder(contract, order)
+        if status_event: trade.statusEvent += status_event
+        if modify_event: trade.modifyEvent += modify_event
+        if fill_event: trade.fillEvent += fill_event
+        if commissionReportEvent: trade.commissionReportEvent += commissionReportEvent
+        if filled_event: trade.filledEvent += filled_event
+        if cancel_event: trade.cancelEvent += cancel_event
+        if cancelled_event: trade.cancelledEvent += cancelled_event
+        return trade
     

@@ -10,7 +10,6 @@ class BacktestBroker(Broker):
     
     def __init__(self, starting_balance: float):
         super().__init__()
-        self.open_orders: list[tuple[ib.Contract, ib.Order]] = []
         self.open_trades: list[ib.Trade] = []
         self.open_positions: list[ib.Position] = []
         self.cash_balance: float = starting_balance
@@ -24,7 +23,11 @@ class BacktestBroker(Broker):
         self.time_now = time_now
         self.last_data = last_data
         self._handle_contract_expiry()        
-        self._handle_orders()
+        self._handle_open_trades()
+
+
+    def get_account_values(self) -> list[ib.AccountValue]:
+        return [ib.AccountValue("", "", str(self.cash_balance), "USD", "")]
     
 
     def get_positions(self) -> list[ib.Position]:
@@ -36,7 +39,7 @@ class BacktestBroker(Broker):
     
     
     def get_open_orders(self) -> list[ib.Order]:
-        return [ord for (_, ord) in self.open_orders]
+        return [t.order for t in self.open_trades]
             
             
     def get_open_trades(self) -> list[ib.Trade]:
@@ -83,17 +86,22 @@ class BacktestBroker(Broker):
         return state
     
     
-    def place_order(self, contract: ib.Contract, order: ib.Order) -> ib.Trade:
-        self.open_orders.append((contract, order))
-        # TODO: append a trade too?
-        trade = ib.Trade()
-        trade.contract = contract
-        trade.order = order
-        
-        trade.orderStatus = ib.OrderStatus()
-        trade.fills = []
-        trade.log = []
-        trade.advancedError = ""
+    def place_order(self, contract: ib.Contract, order: ib.Order, 
+                    status_event: callable = None, modify_event: callable = None,
+                    fill_event: callable = None, commissionReportEvent: callable = None,
+                    filled_event: callable = None, cancel_event: callable = None,
+                    cancelled_event: callable = None) -> ib.Trade:
+
+        status=ib.OrderStatus()
+        trade = ib.Trade(contract=contract, order=order, orderStatus=status)
+        if status_event: trade.statusEvent += status_event
+        if modify_event: trade.modifyEvent += modify_event
+        if fill_event: trade.fillEvent += fill_event
+        if commissionReportEvent: trade.commissionReportEvent += commissionReportEvent
+        if filled_event: trade.filledEvent += filled_event
+        if cancel_event: trade.cancelEvent += cancel_event
+        if cancelled_event: trade.cancelledEvent += cancelled_event
+        self.open_trades.append(trade)
         return trade
             
     
@@ -201,7 +209,6 @@ class BacktestBroker(Broker):
         
         # Update open_positions, and remove this from open_orders
         self._update_positions(position)
-        #self.open_orders.remove((trade.contract, trade.order))
         
         # Update the balance on the account
         self.cash_balance += cash_eff
@@ -235,13 +242,13 @@ class BacktestBroker(Broker):
         trade.cancelledEvent(trade)
         
 
-    def _handle_orders(self):
-        for i, (cont, ord) in enumerate(self.open_orders):
-            trade = ib.Trade(cont, ord)
+    def _handle_open_trades(self):
+        
+        for i, trade in enumerate(self.open_trades):
             
             if self._can_execute_trade(trade):
                 self._execute_trade(trade)
-                del self.open_orders[i]
+                del self.open_trades[i]
             else:
                 self._cancel_trade(trade)
-                del self.open_orders[i]
+                del self.open_trades[i]

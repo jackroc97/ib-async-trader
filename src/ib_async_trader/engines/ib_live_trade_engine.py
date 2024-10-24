@@ -11,14 +11,14 @@ from ..strategy import Strategy
 class IBLiveTradeEngine(Engine):
     
     def __init__(self, strategy: Strategy, time_interval_s: int=5, 
-                 host: str="127.0.0.1", port: int=7496, client_id: int=1, 
-                 data_processor: callable = None):
+                 process_data: callable = None,
+                 host: str="127.0.0.1", port: int=7496, client_id: int=1):
         super().__init__(strategy)
         self.time_interval_s = time_interval_s
         self.host = host
         self.port = port
         self.client_id = client_id
-        self.data_processor = data_processor
+        self.process_data = process_data
         self.ib = ib.IB()
         
     
@@ -42,7 +42,6 @@ class IBLiveTradeEngine(Engine):
             self.ib.sleep(0.01)
         
         self.strategy.on_finish()
-        self.strategy.chart.show(block=True)
         
         
     async def _process_bars(self, bars: list[ib.RealTimeBar], 
@@ -74,13 +73,12 @@ class IBLiveTradeEngine(Engine):
                 }).dropna(how='any')
     
             # Do any user-specified processing here
-            if self.data_processor:
-                bars_df = self.data_processor(bars_df)
+            if self.process_data:
+               bars_df = self.process_data(bars_df)
     
             # Update the data on the strategy, set current tick time
             # and call tick() function 
             self.strategy.data = bars_df
             self.strategy.time_now = bars_df.iloc[-1].name
             await self.strategy.tick()
-            self.strategy.update_live_chart()
-            
+            await self.strategy.post_tick()
