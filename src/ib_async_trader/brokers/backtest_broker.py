@@ -1,4 +1,5 @@
 import ib_async as ib
+import pandas as pd
 
 from datetime import datetime, timedelta
 
@@ -19,7 +20,7 @@ class BacktestBroker(Broker):
         self.time_now = start_time
     
     
-    def update(self, time_now: datetime, last_data: dict):
+    def update(self, time_now: datetime, last_data: pd.Series):
         self.time_now = time_now
         self.last_data = last_data
         self._handle_contract_expiry()        

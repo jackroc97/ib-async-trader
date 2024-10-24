@@ -1,4 +1,3 @@
-import ib_async as ib
 import pandas as pd
 import asyncio
 
@@ -24,15 +23,6 @@ class BacktestEngine(Engine):
         self.walltime_end: int = None
         self.run_walltime: int = None
         
-        # TODO: re-implement logging
-        # Time-series information about the state of the account throughout 
-        # the backtest, such as the account balance, realized and unrealized 
-        # profit-and-loss, and open positions.
-        #self.account_log = AccountLog(self.account_adapter.account)
-        
-        # A log of all trades (executed orders) made throughout the backtest.
-        #self.trade_history: list[dict] = []
-        
         self.data: pd.DataFrame = data
         
         # Get the start and end time of the backtest
@@ -45,10 +35,6 @@ class BacktestEngine(Engine):
 
         # Set data on the user's `strategy`
         self.strategy.data = self.data
-
-        # TODO: in-implement charts for backtest
-        # if self.chart_options is not ChartOptions.NO_CHART:
-        #     self.strategy.chart = ChartUtils.create_chart(chart_defn_file)
 
         # Set the current time for the backtest and the Strategy 
         self.time_now: datetime = self.start_time
@@ -85,32 +71,14 @@ class BacktestEngine(Engine):
             # account given the current state.
             asyncio.run(self.strategy.tick())
             
-            # TODO: re-incorporate charts for backtest
-            #if self.chart_options is ChartOptions.LIVE_CHART:
-            #    self.strategy.update_live_chart()
-            
             # Perform an update on the account so it can effect any actions 
             # taken on it by the stategy.  The update will return lists of 
             # actions that were taken, which will be stored in prev_actions
             # and passed to the strategy on the next tick.
-            self.broker.update(self.time_now, row.to_dict())
+            self.broker.update(self.time_now, row)
             
             self.prev_time = self.time_now
         
         self.walltime_end = time()
         self.run_walltime = self.walltime_end - self.walltime_start    
         self.strategy.on_finish()
-        
-        # if self.chart_options is not ChartOptions.NO_CHART:
-        #     if self.chart_options is ChartOptions.POST_CHART:
-        #        ChartUtils.set_chart_data(self.strategy.chart, self.data)
-               
-        #     try:
-        #         self.strategy.chart.show(block=True)
-        #         self.strategy.chart.exit()         
-        #     except Exception: 
-        #         print("Error: Unable to show chart.")
-
-        # return self.account_log.to_list(), \
-        #     self.account_adapter.account.trade_log.to_list()
-
