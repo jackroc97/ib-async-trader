@@ -61,6 +61,7 @@ class BacktestEngine(Engine):
         # Initialize the account with the backtest start time.
         self.broker.initialize(self.start_time)
         
+        self.strategy.on_start()
         for dt, row in self.data.iterrows():
 
             # Get the current state (time and stock quote data at that time).

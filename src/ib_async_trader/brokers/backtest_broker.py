@@ -13,11 +13,20 @@ class BacktestBroker(Broker):
         super().__init__()
         self.open_trades: list[ib.Trade] = []
         self.open_positions: list[ib.Position] = []
-        self.cash_balance: float = starting_balance
+        
+        self.account_value = ib.AccountValue(
+            "", "", str(starting_balance), "USD", "")
+        
+        self.account_pnl = ib.PnL()
+        self.order_status_event: callable = None
         
         
     def initialize(self, start_time):
         self.time_now = start_time
+    
+    
+    def set_order_status_event(self, callback: callable) -> None:
+        self.order_status_event = callback
     
     
     def update(self, time_now: datetime, last_data: pd.Series):
@@ -28,7 +37,7 @@ class BacktestBroker(Broker):
 
 
     def get_account_values(self) -> list[ib.AccountValue]:
-        return [ib.AccountValue("", "", str(self.cash_balance), "USD", "")]
+        return [self.account_value]
     
 
     def get_positions(self) -> list[ib.Position]:
@@ -62,28 +71,17 @@ class BacktestBroker(Broker):
 
 
     async def qualify_contracts(self, *contracts: ib.Contract) -> list[ib.Contract]:
+        for contract in contracts:
+            if not contract.localSymbol:
+                contract.localSymbol = f"{contract.symbol}{contract.lastTradeDateOrContractMonth}{contract.right}{contract.strike}"
         return contracts
     
     
     async def what_if_order(self, contract: ib.Contract, order: ib.Order) -> ib.OrderState:
+        # TODO: To be more realistic, this should return an OrderStat object
+        # that reflects what would happen if the order was submitted (effects
+        # on margin, etc.)
         state = ib.OrderState()
-        state.status = ""  
-        #state.initMarginBefore = ""
-        #state.maintMarginBefore = ""
-        state.equityWithLoanBefore = ""
-        #state.initMarginChange = ""
-        #state.maintMarginChange = ""
-        state.equityWithLoanChange = ""
-        #state.initMarginAfter = ""
-        #state.maintMarginAfter = ""
-        state.equityWithLoanAfter = ""
-        #state.commission = 0.0
-        #state.minCommission 0.0
-        #state.maxCommission = 0.0
-        state.commissionCurrency = "USD"
-        state.warningText = "" 
-        state.completedTime = ""
-        state.completedStatus = ""
         return state
     
     
@@ -103,6 +101,9 @@ class BacktestBroker(Broker):
         if cancel_event: trade.cancelEvent += cancel_event
         if cancelled_event: trade.cancelledEvent += cancelled_event
         self.open_trades.append(trade)
+        
+        trade.log.append(ib.TradeLogEntry(self.time_now, status="Submitted"))
+        trade.statusEvent(trade)
         return trade
             
     
@@ -169,7 +170,7 @@ class BacktestBroker(Broker):
         # Do we have enough cash or margin to execute this trade?
         cash_eff = self._get_trade_cash_effect(trade)
         
-        return is_valid and (self.cash_balance + cash_eff) > 0
+        return is_valid and (float(self.account_value.value) + cash_eff) > 0
 
     
     def _update_positions(self, new_position: ib.Position) -> bool:
@@ -182,6 +183,7 @@ class BacktestBroker(Broker):
                                      new_position.avgCost) / new_qty)
                 else: 
                     new_avg_cost = old_position.avgCost
+                    
                 new_position = ib.Position("", new_position.contract, 
                                            new_qty, new_avg_cost)
                 self.open_positions.remove(old_position)
@@ -212,23 +214,42 @@ class BacktestBroker(Broker):
         self._update_positions(position)
         
         # Update the balance on the account
-        self.cash_balance += cash_eff
+        # TODO: does this ever decrease value?
+        self.account_value = self.account_value._replace(
+            value=float(self.account_value.value) + cash_eff)
+        
+        self.account_pnl.realizedPnL += cash_eff
 
         # Create execution on commission data, then call trade fill events
         # NOTE: This currently assumes perfect execution of the entire order
         # all at once (one fill for all shares) and no commissions.
         # TODO: Could potentially model commisssions and imperfect executions
         # here.
+        # NOTE: IB api convention is that the fill price is is per contract,
+        # so here we must divide by the contract multiplier.
+        exec_price = abs(avg_cost)/trade.contract.multiplier
         exec = ib.Execution(time=self.time_now, 
-                            exchange=trade.contract.exchange, shares=qty, 
-                            price=avg_cost, cumQty=qty, avgPrice=avg_cost)
+                            exchange=trade.contract.exchange, 
+                            shares=qty, 
+                            price=exec_price, 
+                            cumQty=qty, 
+                            avgPrice=exec_price)
         comm = ib.CommissionReport()
         fill = ib.Fill(trade.contract, exec, comm, self.time_now)
+        trade.fills.append(fill)
+        
+        trade.log.append(
+            ib.TradeLogEntry(self.time_now, 
+                             status="Submitted", 
+                             message=f"Fill {trade.order.totalQuantity:.1f}\@{exec_price:.2f}"))
+        trade.log.append(ib.TradeLogEntry(self.time_now, status="Filled"))
+        trade.statusEvent(trade)
+        
         trade.fillEvent(trade, fill)
         trade.filledEvent(trade)
         trade.commissionReportEvent(trade, fill, comm)
-        # TODO: update trade status
-        trade.statusEvent(trade)
+        
+        self.order_status_event(trade)
         
     
     def _cancel_trade(self, trade: ib.Trade):
@@ -239,8 +260,10 @@ class BacktestBroker(Broker):
         Args:
             trade (ib.Trade): The `Trade` to cancel.
         """
+        trade.log.append(ib.TradeLogEntry(self.time_now, status="Cancelled"))
         trade.cancelEvent(trade)
         trade.cancelledEvent(trade)
+        trade.statusEvent(trade)
         
 
     def _handle_open_trades(self):

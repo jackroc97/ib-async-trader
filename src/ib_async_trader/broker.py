@@ -7,6 +7,10 @@ class Broker:
         pass
     
     
+    def set_order_status_event(self, callback: callable) -> None:
+        pass
+    
+    
     def get_account_values(self) -> list[ib.AccountValue]:
         pass
     
