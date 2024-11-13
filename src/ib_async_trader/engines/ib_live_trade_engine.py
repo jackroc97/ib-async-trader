@@ -1,7 +1,8 @@
 import ib_async as ib
 import pandas as pd
+import sys
 
-from datetime import time
+from pynput import keyboard
 
 from ..brokers.ib_live_trade_broker import IBLiveTradeBroker
 from ..engine import Engine
@@ -11,7 +12,7 @@ from ..strategy import Strategy
 class IBLiveTradeEngine(Engine):
     
     def __init__(self, strategy: Strategy, time_interval_s: int=5, 
-                 process_data: callable = None,
+                 process_data: callable = None, process_data_args: dict = {},
                  host: str="127.0.0.1", port: int=7496, client_id: int=1):
         super().__init__(strategy)
         self.time_interval_s = time_interval_s
@@ -19,10 +20,13 @@ class IBLiveTradeEngine(Engine):
         self.port = port
         self.client_id = client_id
         self.process_data = process_data
+        self.process_data_args = process_data_args
+        self.run_program: bool = False
         self.ib = ib.IB()
         
     
-    def run(self, start_time: time=None, end_time: time=None) -> None:
+    def run(self) -> None:
+        self.run_program = True
         self.strategy.broker = IBLiveTradeBroker(self.ib)
         
         self.ib.connect(self.host, self.port, self.client_id)
@@ -36,12 +40,19 @@ class IBLiveTradeEngine(Engine):
         five_sec_bars.updateEvent += lambda bars, has_new: \
             self._process_bars(bars, has_new)
 
-        # Keep the process alive for the specified time
-        time_range = self.ib.timeRange(start_time, end_time, 1)
-        for _ in time_range:
-            self.ib.sleep(0.01)
+        # Keep the process alive until a stop is requested by keypress
+        with keyboard.Listener(on_press=self._on_keypress) as listener:
+            while self.run_program:
+                self.ib.sleep(0.01)
         
         self.strategy.on_finish()
+        self.ib.disconnect()
+        sys.exit()
+        
+        
+    def _on_keypress(self, key: keyboard.KeyCode):
+        if key == keyboard.KeyCode.from_char("q"):
+            self.run_program = False
         
         
     async def _process_bars(self, bars: list[ib.RealTimeBar], 
@@ -74,7 +85,7 @@ class IBLiveTradeEngine(Engine):
     
             # Do any user-specified processing here
             if self.process_data:
-               bars_df = self.process_data(bars_df)
+               bars_df = self.process_data(bars_df, **self.process_data_args)
     
             # Update the data on the strategy, set current tick time
             # and call tick() function 
