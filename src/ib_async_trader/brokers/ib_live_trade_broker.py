@@ -8,10 +8,6 @@ class IBLiveTradeBroker(Broker):
     def __init__(self, ib: ib.IB):
         super().__init__()
         self.ib = ib
-            
-    
-    def set_order_status_event(self, callback: callable) -> None:
-        self.ib.orderStatusEvent += callback
     
     
     def get_account_values(self) -> list[ib.AccountValue]:

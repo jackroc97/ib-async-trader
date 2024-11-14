@@ -18,17 +18,12 @@ class BacktestBroker(Broker):
             "", "", str(starting_balance), "USD", "")
         
         self.account_pnl = ib.PnL()
-        self.order_status_event: callable = None
         
         
     def initialize(self, start_time):
         self.time_now = start_time
     
-    
-    def set_order_status_event(self, callback: callable) -> None:
-        self.order_status_event = callback
-    
-    
+
     def update(self, time_now: datetime, last_data: pd.Series):
         self.time_now = time_now
         self.last_data = last_data
@@ -248,8 +243,6 @@ class BacktestBroker(Broker):
         trade.fillEvent(trade, fill)
         trade.filledEvent(trade)
         trade.commissionReportEvent(trade, fill, comm)
-        
-        self.order_status_event(trade)
         
     
     def _cancel_trade(self, trade: ib.Trade):
