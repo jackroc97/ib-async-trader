@@ -38,40 +38,19 @@ class Strategy:
             any: The requested data at the current time or specified number of
                 "bars ago".
         """
+        
         # NOTE: If an error is caused here by get_loc returning more than one 
         # value, the most likely culprit is duplicate data.
         #idx = self.data.index.get_loc(self.time_now) - bars_ago
         idx = self.data.index.get_loc(self.time_now) - bars_ago
         return self.data.iloc[idx][name]
-        
-        
-    def barssince(self, conditional: callable, df: pd.DataFrame, offset: int = 0, 
-                  max_bars: int = None) -> int:
-        """
-        Returns the number of bars of data in `df` since a condition given 
-        in `conditional` was `True`.  Bars are counted backwards from the
-        current bar (current time in backtest).
 
-        Args:
-            conditional (callable): A function representing the condition that 
-                is being tested in the data.  The args of the function should 
-                correspond to the columns of data being passed in `df`.
-            df (pd.DataFrame): The data on which to test the condition.
-            offset (int, optional): Offsets the current bar by the amount 
-                specified.  Defaults to 0.
-            max_bars (int, optional): Max number of bars to look back before
-                returning None.  Highly recommended to set to non-zero to
-                improve performance.  Defaults to None.
 
-        Returns:
-            int: The number of bars since the condition was True.
+    def on_start(self) -> None:
         """
-        end_idx = (df.index.get_loc(self.time_now) + 1) - offset
-        start_idx = end_idx - max_bars if max_bars else 0
-        sliced = df.iloc[start_idx:end_idx].copy()        
-        sliced["condition"] = sliced.apply(lambda row: conditional(*row.values), axis=1)
-        t = sliced.where(sliced["condition"]).last_valid_index()
-        return (end_idx - df.index.get_loc(t) - 1) if t else None
+        Called once at the very beginning of a live trade session or backtest.
+        """
+        pass
 
 
     async def tick(self):
@@ -86,12 +65,13 @@ class Strategy:
     
     
     async def post_tick(self):
+        """
+        Called after tick is called when the strategy is run with the 
+        `IBLiveTradeEngine`.  This is where actions such as updating live 
+        charts should occur.
+        """
         pass
         
-    
-    def on_start(self) -> None:
-        pass
-    
         
     def on_finish(self) -> None:
         """

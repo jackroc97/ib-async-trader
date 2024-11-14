@@ -26,28 +26,30 @@ class IBLiveTradeEngine(Engine):
         
     
     def run(self) -> None:
-        self.run_program = True
-        self.strategy.broker = IBLiveTradeBroker(self.ib)
-        
-        self.ib.connect(self.host, self.port, self.client_id)
-        self.ib.qualifyContracts(self.strategy.underlying_contract)
-        
-        five_sec_bars = self.ib.reqHistoricalData(
-            self.strategy.underlying_contract, endDateTime="", durationStr="2 D",
-            barSizeSetting="5 secs", whatToShow="TRADES", useRTH=False, 
-            keepUpToDate=True)
+        try:
+            self.run_program = True
+            self.strategy.broker = IBLiveTradeBroker(self.ib)
 
-        five_sec_bars.updateEvent += lambda bars, has_new: \
-            self._process_bars(bars, has_new)
+            self.ib.connect(self.host, self.port, self.client_id)
+            self.ib.qualifyContracts(self.strategy.underlying_contract)
 
-        # Keep the process alive until a stop is requested by keypress
-        with keyboard.Listener(on_press=self._on_keypress) as listener:
-            while self.run_program:
-                self.ib.sleep(0.01)
+            five_sec_bars = self.ib.reqHistoricalData(
+                self.strategy.underlying_contract, endDateTime="", durationStr="2 D",
+                barSizeSetting="5 secs", whatToShow="TRADES", useRTH=False, 
+                keepUpToDate=True)
+
+            five_sec_bars.updateEvent += lambda bars, has_new: \
+                self._process_bars(bars, has_new)
+
+            # Keep the process alive until a stop is requested by keypress
+            with keyboard.Listener(on_press=self._on_keypress) as listener:
+                while self.run_program:
+                    self.ib.sleep(0.01)
         
-        self.strategy.on_finish()
-        self.ib.disconnect()
-        sys.exit()
+        finally:
+            self.strategy.on_finish()
+            self.ib.disconnect()
+            sys.exit()
         
         
     def _on_keypress(self, key: keyboard.KeyCode):
