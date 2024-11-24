@@ -11,6 +11,14 @@ class Broker:
         pass
     
     
+    def get_buying_power(self) -> float:
+        pass
+    
+    
+    def get_cash_balance(self) -> float:
+        pass
+    
+    
     def get_account_values(self) -> list[ib.AccountValue]:
         pass
     

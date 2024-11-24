@@ -10,6 +10,18 @@ class IBLiveTradeBroker(Broker):
         self.ib = ib
     
     
+    def get_buying_power(self) -> float:
+        acct_vals = self.ib.accountValues()
+        bp = [av.value for av in acct_vals if av.tag == "BuyingPower"][0]
+        return bp
+    
+    
+    def get_cash_balance(self) -> float:
+        acct_vals = self.ib.accountValues()
+        bp = [av.value for av in acct_vals if av.tag == "CashBalance"][0]
+        return bp
+    
+    
     def get_account_values(self) -> list[ib.AccountValue]:
         return self.ib.accountValues()
     

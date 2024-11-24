@@ -14,9 +14,7 @@ class BacktestBroker(Broker):
         self.open_trades: list[ib.Trade] = []
         self.open_positions: list[ib.Position] = []
         
-        self.account_value = ib.AccountValue(
-            "", "", str(starting_balance), "USD", "")
-        
+        self.cash_balance = starting_balance        
         self.account_pnl = ib.PnL()
         
         
@@ -31,8 +29,16 @@ class BacktestBroker(Broker):
         self._handle_open_trades()
 
 
+    def get_buying_power(self) -> float:
+        return self.cash_balance
+    
+    
+    def get_cash_balance(self) -> float:
+        return self.cash_balance
+
+
     def get_account_values(self) -> list[ib.AccountValue]:
-        return [self.account_value]
+        return None
     
 
     def get_positions(self) -> list[ib.Position]:
@@ -165,7 +171,7 @@ class BacktestBroker(Broker):
         # Do we have enough cash or margin to execute this trade?
         cash_eff = self._get_trade_cash_effect(trade)
         
-        return is_valid and (float(self.account_value.value) + cash_eff) > 0
+        return is_valid and (self.cash_balance + cash_eff) > 0
 
     
     def _update_positions(self, new_position: ib.Position) -> bool:
@@ -209,9 +215,7 @@ class BacktestBroker(Broker):
         self._update_positions(position)
         
         # Update the balance on the account
-        # TODO: does this ever decrease value?
-        self.account_value = self.account_value._replace(
-            value=float(self.account_value.value) + cash_eff)
+        self.cash_balance += cash_eff
         
         self.account_pnl.realizedPnL += cash_eff
 
