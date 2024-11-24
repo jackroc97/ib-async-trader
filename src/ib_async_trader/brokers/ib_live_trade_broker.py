@@ -13,13 +13,13 @@ class IBLiveTradeBroker(Broker):
     def get_buying_power(self) -> float:
         acct_vals = self.ib.accountValues()
         bp = [av.value for av in acct_vals if av.tag == "BuyingPower"][0]
-        return bp
+        return float(bp)
     
     
     def get_cash_balance(self) -> float:
         acct_vals = self.ib.accountValues()
-        bp = [av.value for av in acct_vals if av.tag == "CashBalance"][0]
-        return bp
+        cb = [av.value for av in acct_vals if av.tag == "CashBalance"][0]
+        return float(cb)
     
     
     def get_account_values(self) -> list[ib.AccountValue]:
