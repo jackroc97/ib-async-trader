@@ -16,7 +16,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-[tool.setuptools.dynamic]
 dependencies = [
   "eventkit==1.0.3",
   "ib_async==1.0.3",
