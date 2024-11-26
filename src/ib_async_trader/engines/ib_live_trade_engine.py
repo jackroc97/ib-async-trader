@@ -2,8 +2,6 @@ import ib_async as ib
 import pandas as pd
 import sys
 
-from pynput import keyboard
-
 from ..brokers.ib_live_trade_broker import IBLiveTradeBroker
 from ..engine import Engine
 from ..strategy import Strategy
@@ -42,19 +40,16 @@ class IBLiveTradeEngine(Engine):
                 self._process_bars(bars, has_new)
 
             # Keep the process alive until a stop is requested by keypress
-            with keyboard.Listener(on_press=self._on_keypress) as listener:
-                while self.run_program:
-                    self.ib.sleep(0.01)
+            while self.run_program:
+                inpt = sys.stdin.readline().strip()
+                if inpt and inpt == "q":
+                    self.run_program = False
+                self.ib.sleep(0.01)
         
         finally:
             self.strategy.on_finish()
             self.ib.disconnect()
             sys.exit()
-        
-        
-    def _on_keypress(self, key: keyboard.KeyCode):
-        if key == keyboard.KeyCode.from_char("q"):
-            self.run_program = False
         
         
     async def _process_bars(self, bars: list[ib.RealTimeBar], 
