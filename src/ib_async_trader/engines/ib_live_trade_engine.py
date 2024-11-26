@@ -1,5 +1,6 @@
 import ib_async as ib
 import pandas as pd
+import threading
 import sys
 
 from ..brokers.ib_live_trade_broker import IBLiveTradeBroker
@@ -22,6 +23,22 @@ class IBLiveTradeEngine(Engine):
         self.run_program: bool = False
         self.ib = ib.IB()
         
+        self.input_lock = threading.Lock()
+        self.user_input = None
+    
+    
+    def _get_input(self):
+        while True:
+            line = sys.stdin.readline().strip()
+            if line:
+                with self.input_lock:
+                    self.user_input = line
+    
+    
+    def _non_blocking_input(self):
+        with self.input_lock:
+            return self.user_input
+        
     
     def run(self) -> None:
         try:
@@ -39,9 +56,12 @@ class IBLiveTradeEngine(Engine):
             five_sec_bars.updateEvent += lambda bars, has_new: \
                 self._process_bars(bars, has_new)
 
+            input_thread = threading.Thread(target=self._get_input, daemon=True)
+            input_thread.start()
+
             # Keep the process alive until a stop is requested by keypress
             while self.run_program:
-                inpt = sys.stdin.readline().strip()
+                inpt = self._non_blocking_input()
                 if inpt and inpt == "q":
                     self.run_program = False
                 self.ib.sleep(0.01)
