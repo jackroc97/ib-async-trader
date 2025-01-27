@@ -46,6 +46,15 @@ class Strategy:
         return self.data.iloc[idx][name]
 
 
+    def pre_start(self) -> None:
+        """
+        Called before the `Strategy` is started, and is used to set up any 
+        necessary data or objects before the start of the session when the 
+        strategy is run with the `IBLiveTradeEngine`.
+        """
+        pass
+
+
     def on_start(self) -> None:
         """
         Called once at the very beginning of a live trade session or backtest.

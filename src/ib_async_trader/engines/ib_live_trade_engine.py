@@ -53,6 +53,9 @@ class IBLiveTradeEngine(Engine):
                 barSizeSetting="5 secs", whatToShow="TRADES", useRTH=False, 
                 keepUpToDate=True)
 
+            self.strategy.pre_start()
+            self.strategy.on_start()
+
             five_sec_bars.updateEvent += lambda bars, has_new: \
                 self._process_bars(bars, has_new)
 
