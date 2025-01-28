@@ -22,6 +22,7 @@ class IBLiveTradeEngine(Engine):
         self.process_data_args = process_data_args
         self.run_program: bool = False
         self.ib = ib.IB()
+        self.is_first_tick = True
         
         self.input_lock = threading.Lock()
         self.user_input = None
@@ -53,7 +54,6 @@ class IBLiveTradeEngine(Engine):
                 barSizeSetting="5 secs", whatToShow="TRADES", useRTH=False, 
                 keepUpToDate=True)
 
-            self.strategy.pre_start()
             self.strategy.on_start()
 
             five_sec_bars.updateEvent += lambda bars, has_new: \
@@ -77,6 +77,10 @@ class IBLiveTradeEngine(Engine):
         
     async def _process_bars(self, bars: list[ib.RealTimeBar], 
                       has_new_bar: bool) -> None:
+        
+        if self.is_first_tick:
+            await self.strategy.first_tick()
+            self.is_first_tick = False
         
         if has_new_bar:
             
