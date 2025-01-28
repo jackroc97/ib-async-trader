@@ -78,10 +78,6 @@ class IBLiveTradeEngine(Engine):
     async def _process_bars(self, bars: list[ib.RealTimeBar], 
                       has_new_bar: bool) -> None:
         
-        if self.is_first_tick:
-            await self.strategy.first_tick()
-            self.is_first_tick = False
-        
         if has_new_bar:
             
             # Convert RealTimeBar list to dataframe
@@ -115,5 +111,10 @@ class IBLiveTradeEngine(Engine):
             # and call tick() function 
             self.strategy.data = bars_df
             self.strategy.time_now = bars_df.iloc[-1].name
+            
+            if self.is_first_tick:
+                await self.strategy.first_tick()
+                self.is_first_tick = False
+            
             await self.strategy.tick()
             await self.strategy.post_tick()
