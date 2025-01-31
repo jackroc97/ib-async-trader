@@ -20,26 +20,9 @@ class IBLiveTradeEngine(Engine):
         self.client_id = client_id
         self.process_data = process_data
         self.process_data_args = process_data_args
-        self.run_program: bool = False
         self.ib = ib.IB()
         self.is_first_tick = True
-        
-        self.input_lock = threading.Lock()
-        self.user_input = None
-    
-    
-    def _get_input(self):
-        while True:
-            line = sys.stdin.readline().strip()
-            if line:
-                with self.input_lock:
-                    self.user_input = line
-    
-    
-    def _non_blocking_input(self):
-        with self.input_lock:
-            return self.user_input
-        
+                
     
     def run(self) -> None:
         try:
@@ -58,21 +41,22 @@ class IBLiveTradeEngine(Engine):
 
             five_sec_bars.updateEvent += lambda bars, has_new: \
                 self._process_bars(bars, has_new)
-
-            input_thread = threading.Thread(target=self._get_input, daemon=True)
-            input_thread.start()
-
+                
             # Keep the process alive until a stop is requested by keypress
             while self.run_program:
-                inpt = self._non_blocking_input()
-                if inpt and inpt == "q":
-                    self.run_program = False
                 self.ib.sleep(0.01)
         
+        except KeyboardInterrupt:
+            self.stop()
+        
         finally:
-            self.strategy.on_finish()
-            self.ib.disconnect()
-            sys.exit()
+            self.stop()
+        
+        
+    def stop(self) -> None:
+        self.strategy.on_finish()
+        self.ib.disconnect()
+        sys.exit()
         
         
     async def _process_bars(self, bars: list[ib.RealTimeBar], 
