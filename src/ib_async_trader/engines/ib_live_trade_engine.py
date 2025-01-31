@@ -12,12 +12,14 @@ class IBLiveTradeEngine(Engine):
     
     def __init__(self, strategy: Strategy, time_interval_s: int=5, 
                  process_data: callable = None, process_data_args: dict = {},
-                 host: str="127.0.0.1", port: int=7496, client_id: int=1):
+                 host: str="127.0.0.1", port: int=7496, client_id: int=1,
+                 wait_time: int=0):
         super().__init__(strategy)
         self.time_interval_s = time_interval_s
         self.host = host
         self.port = port
         self.client_id = client_id
+        self.wait_time = wait_time  
         self.process_data = process_data
         self.process_data_args = process_data_args
         self.ib = ib.IB()
@@ -25,8 +27,10 @@ class IBLiveTradeEngine(Engine):
                 
     
     def run(self) -> None:
+        
+        self.ib.sleep(self.wait_time)
+        
         try:
-            self.run_program = True
             self.strategy.broker = IBLiveTradeBroker(self.ib)
 
             self.ib.connect(self.host, self.port, self.client_id)
@@ -43,7 +47,7 @@ class IBLiveTradeEngine(Engine):
                 self._process_bars(bars, has_new)
                 
             # Keep the process alive until a stop is requested by keypress
-            while self.run_program:
+            while True:
                 self.ib.sleep(0.01)
         
         except KeyboardInterrupt:
