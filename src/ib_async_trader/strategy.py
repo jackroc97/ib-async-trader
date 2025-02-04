@@ -3,6 +3,7 @@ from datetime import datetime
 from .broker import Broker
 from .data import Data
 
+
 class Strategy:
     """
     The `Strategy` class is an abstract class that is designed to provided a 
