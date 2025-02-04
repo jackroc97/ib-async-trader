@@ -31,9 +31,11 @@ class Data:
         
         # NOTE: If an error is caused here by get_loc returning more than one 
         # value, the most likely culprit is duplicate data.
-        #idx = self.data.index.get_loc(self.time_now) - bars_ago
-        idx = self._df.index.get_loc(self.time_now) - bars_ago
-        return self._df.iloc[idx][name]
+        if self.time_now in self._df.index:
+            idx = self._df.index.get_loc(self.time_now) - bars_ago
+            return self._df.iloc[idx][name]
+        else:
+            return None
     
     
     def get_start_time(self) -> datetime:

@@ -75,7 +75,7 @@ class BacktestEngine(Engine):
             
             # Advance each data's perception of the current time
             data: DataFile
-            for data in self.datas:
+            for data in self.datas.items():
                 data.set_time(self.time_now)
             
 
