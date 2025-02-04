@@ -43,7 +43,7 @@ class Broker:
         pass
     
     
-    async def get_options_chain(self, underlying: ib.Contract) -> list[ib.OptionChain]:
+    async def get_options_chain(self, contract: ib.Contract) -> list[ib.OptionChain]:
         pass
     
     

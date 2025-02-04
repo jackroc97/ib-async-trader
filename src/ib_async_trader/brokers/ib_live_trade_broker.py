@@ -46,8 +46,8 @@ class IBLiveTradeBroker(Broker):
         return await self.ib.reqAllOpenOrdersAsync()
     
     
-    async def get_options_chain(self, underlying: ib.Contract) -> list[ib.OptionChain]:
-        return await self.ib.reqSecDefOptParamsAsync(underlying.symbol, underlying.exchange, underlying.secType, underlying.conId)
+    async def get_options_chain(self, contract: ib.Contract) -> list[ib.OptionChain]:
+        return await self.ib.reqSecDefOptParamsAsync(contract.symbol, contract.exchange, contract.secType, contract.conId)
         
     
     async def qualify_contracts(self, *contracts: ib.Contract) -> list[ib.Contract]:

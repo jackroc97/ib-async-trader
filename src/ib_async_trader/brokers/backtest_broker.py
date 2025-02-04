@@ -1,15 +1,15 @@
 import ib_async as ib
-import pandas as pd
 
 from datetime import datetime, timedelta
 
 from ..broker import Broker
+from ..datas.data_file import DataFile
 from ..utils.black_scholes import BlackScholes
 
 
 class BacktestBroker(Broker):
     
-    def __init__(self, starting_balance: float):
+    def __init__(self, datas: dict[str, DataFile], starting_balance: float):
         super().__init__()
         self.open_trades: list[ib.Trade] = []
         self.open_positions: list[ib.Position] = []
@@ -17,14 +17,15 @@ class BacktestBroker(Broker):
         self.cash_balance = starting_balance        
         self.account_pnl = ib.PnL()
         
+        self.datas = datas
+        
         
     def initialize(self, start_time):
         self.time_now = start_time
     
 
-    def update(self, time_now: datetime, last_data: pd.Series):
+    def update(self, time_now: datetime):
         self.time_now = time_now
-        self.last_data = last_data
         self._handle_contract_expiry()        
         self._handle_open_trades()
 
@@ -61,13 +62,13 @@ class BacktestBroker(Broker):
         return self.open_trades
     
     
-    async def get_options_chain(self, underlying: ib.Contract) -> list[ib.OptionChain]:
+    async def get_options_chain(self, contract: ib.Contract) -> list[ib.OptionChain]:
         expirations = [(self.time_now + timedelta(days=x)).strftime("%Y%m%d") \
             for x in range(30)]
-        atm_strk = int(5 * round(self.last_data["close"] / 5))
+        atm_strk = int(5 * round(self.datas[contract.symbol].get("close") / 5))
         strikes = [strk for strk in range(atm_strk - 100, atm_strk + 100, 5)]
-        return [ib.OptionChain(underlying.exchange, underlying.conId, 
-                               underlying.tradingClass, underlying.multiplier, 
+        return [ib.OptionChain(contract.exchange, contract.conId, 
+                               contract.tradingClass, contract.multiplier, 
                                expirations, strikes)]
 
 
@@ -136,6 +137,7 @@ class BacktestBroker(Broker):
         
     def _get_trade_cash_effect(self, trade: ib.Trade) -> float:
         coeff = -1 if trade.order.action == "BUY" else 1
+        symbol = trade.contract.symbol
         if type(trade.contract) in [ib.Option, ib.FuturesOption]:
             
             exp_dt = self._get_contract_expiration_dt(trade.contract)
@@ -152,12 +154,12 @@ class BacktestBroker(Broker):
             if t <= 0:
                 t = 1E-12
 
-            c, p = BlackScholes.call_put_price(self.last_data["close"],
+            c, p = BlackScholes.call_put_price(self.datas[symbol].get("close"),
                                                 trade.contract.strike, 
-                                                t, self.last_data["iv"])    
+                                                t, self.datas[symbol].get("iv"))    
             price = c if trade.contract.right in ["CALL", "C"] else p
         else:
-            price = self.last_data["close"]
+            price = self.datas[symbol].get("close")
             
         return coeff * trade.order.totalQuantity * trade.contract.multiplier \
             * price

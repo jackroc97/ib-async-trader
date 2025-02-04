@@ -1,10 +1,7 @@
 from datetime import datetime
 
-import pandas as pd
-import ib_async as ib
-
 from .broker import Broker
-
+from .data import Data
 
 class Strategy:
     """
@@ -14,37 +11,12 @@ class Strategy:
     methods.
     """
     
-    def __init__(self, underlying_contract: ib.Contract):
+    def __init__(self):
         """Initialize a `Strategy` object."""
-        self.underlying_contract = underlying_contract
         self.broker: Broker = None
         self.time_now: datetime = None
-        self.data: pd.DataFrame = None
+        self.datas: dict[str, Data]
         
-        
-    def get_data(self, name: str, bars_ago: int = 0) -> any:
-        """
-        Get a single cell of data from `Strategy.data` DataFrame at the current
-        backtest time, or a specified number of "bars ago".
-
-        Args:
-            name (str): The name of the data to be retrieved (e.g. "open" or
-                "close").  
-            bars_ago (int, optional): A number of bars back to get the data, 
-                counting backwards from the current backtest time.  
-                Defaults to 0.
-
-        Returns:
-            any: The requested data at the current time or specified number of
-                "bars ago".
-        """
-        
-        # NOTE: If an error is caused here by get_loc returning more than one 
-        # value, the most likely culprit is duplicate data.
-        #idx = self.data.index.get_loc(self.time_now) - bars_ago
-        idx = self.data.index.get_loc(self.time_now) - bars_ago
-        return self.data.iloc[idx][name]
-
 
     def on_start(self) -> None:
         """

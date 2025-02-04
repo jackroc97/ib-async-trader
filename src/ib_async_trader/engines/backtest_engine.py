@@ -1,42 +1,35 @@
-import pandas as pd
 import asyncio
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import time
 
 from ..brokers.backtest_broker import BacktestBroker
+from ..datas.data_file import DataFile
 from ..engine import Engine
 from ..strategy import Strategy
 
 
 class BacktestEngine(Engine):
     
-    def __init__(self, strategy, data: pd.DataFrame, start_cash: float = 10000,
-                 start_time: datetime = None, end_time: datetime = None):
-        super().__init__(strategy)
+    def __init__(self, strategy: Strategy, datas: dict[str, DataFile], 
+                 time_step: timedelta, start_time: datetime = None, 
+                 end_time: datetime = None, start_cash: float = 10000):
+        super().__init__(strategy, datas)
         
-        self.strategy: Strategy = strategy
-        self.broker = BacktestBroker(start_cash)
+        self.broker = BacktestBroker(datas, start_cash)
         self.strategy.broker = self.broker
         
         self.walltime_start: int = None
         self.walltime_end: int = None
         self.run_walltime: int = None
         
-        self.data: pd.DataFrame = data
-        
         # Get the start and end time of the backtest
-        self.start_time: datetime = start_time or self.data.index[0]
-        self.end_time: datetime = end_time or self.data.index[-1]
-        
-        # Select only data points that are between the start end end date
-        self.data = self.data[(self.data.index >= self.start_time) & \
-            (self.data.index <= self.end_time)]
-
-        # Set data on the user's `strategy`
-        self.strategy.data = self.data
+        first_data: DataFile = next(iter(self.datas.items()))
+        self.start_time: datetime = start_time or first_data.get_start_time()
+        self.end_time: datetime = end_time or first_data.get_end_time()
 
         # Set the current time for the backtest and the Strategy 
+        self.time_step = time_step
         self.time_now: datetime = self.start_time
         self.strategy.time_now = self.time_now
 
@@ -62,10 +55,9 @@ class BacktestEngine(Engine):
         self.broker.initialize(self.start_time)
         
         self.strategy.on_start()
-        for dt, row in self.data.iterrows():
+        while self.time_now <= self.end_time:
 
             # Get the current state (time and stock quote data at that time).
-            self.time_now: datetime = dt.to_pydatetime()
             self.strategy.time_now = self.time_now
             
             # Engage the strategy, which will decide what actions to take on the 
@@ -76,10 +68,17 @@ class BacktestEngine(Engine):
             # taken on it by the stategy.  The update will return lists of 
             # actions that were taken, which will be stored in prev_actions
             # and passed to the strategy on the next tick.
-            self.broker.update(self.time_now, row)
+            self.broker.update(self.time_now)
             
-            self.prev_time = self.time_now
-        
+            # Advance the current time
+            self.time_now += self.time_step
+            
+            # Advance each data's perception of the current time
+            data: DataFile
+            for data in self.datas:
+                data.set_time(self.time_now)
+            
+
         self.walltime_end = time()
         self.run_walltime = self.walltime_end - self.walltime_start    
         self.strategy.on_finish()
