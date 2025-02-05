@@ -57,7 +57,8 @@ class IBLiveTradeEngine(Engine):
                                             self.tick_rate_s)
         
         # Call strategy tick function at each interval
-        async for _ in time_range:                
+        async for t in time_range:    
+            self.strategy.time_now = t            
             await self.strategy.tick()
     
     
