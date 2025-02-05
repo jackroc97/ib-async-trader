@@ -18,18 +18,17 @@ class DataStream(Data):
         self.is_first_update = True
         
         
-    def initialize(self, ib: IB) -> None:
+    async def initialize(self, ib: IB) -> None:
         self.ib = ib
-        self.ib.qualifyContracts(self.contract)
-        self._five_sec_bars = self.ib.reqHistoricalData(
+        await self.ib.qualifyContractsAsync(self.contract)
+        self._five_sec_bars = await self.ib.reqHistoricalDataAsync(
             self.contract, endDateTime="", durationStr="2 D",
             barSizeSetting="5 secs", whatToShow="TRADES", useRTH=False, 
-            keepUpToDate=True)
-        self._five_sec_bars.updateEvent += lambda bars, has_new: \
-                self.process_data(bars, has_new)
+            keepUpToDate=True)        
+        self._five_sec_bars.updateEvent += self._on_update
         
-        
-    def _on_update(self, bars: list[RealTimeBar], has_new: bool):
+                
+    async def _on_update(self, bars: list[RealTimeBar], has_new: bool):
         if has_new:
             
             # Convert RealTimeBar list to dataframe
@@ -56,13 +55,12 @@ class DataStream(Data):
                 }).dropna(how='any')
     
             # Do any user-specified processing here
-            
             if self.process_data:
-               bars_df = self.process_data(bars_df, self.is_first_update, **self.process_data_args)
+               bars_df = await self.process_data(bars_df, self.is_first_update, **self.process_data_args)
     
             # Update the data on the strategy, set current tick time
             # and call tick() function 
             self._df = bars_df
-            self.time_now = bars_df.iloc[-1].name
+            self.time_now = self._df.iloc[-1].name
             
         self.is_first_update = False

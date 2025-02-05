@@ -52,6 +52,11 @@ class BacktestEngine(Engine):
         self.broker.initialize(self.start_time)
         
         self.strategy.on_start()
+        
+        # TODO: An alternative to incrementing timestep in this manner would be
+        # to use the datetime index from a "main" data-source.  This may yeild 
+        # performance enhancements since it would not run over dates for which 
+        # theres no actual data.
         while self.time_now <= self.end_time:
 
             # Get the current state (time and stock quote data at that time).

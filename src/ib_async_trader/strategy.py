@@ -24,14 +24,6 @@ class Strategy:
         Called once at the very beginning of a live trade session or backtest.
         """
         pass
-
-
-    async def first_tick(self):
-        """
-        Called onces at the beginning of a live session.  This can be used to 
-        initialize strategy data or charts.
-        """
-        pass
         
 
     async def tick(self):
@@ -41,15 +33,6 @@ class Strategy:
         once per timestep in a backtest, and is where the `Strategy` may
         interact with an `Account` to submit orders based on current market 
         conditions.
-        """
-        pass
-    
-    
-    async def post_tick(self):
-        """
-        Called after tick is called when the strategy is run with the 
-        `IBLiveTradeEngine`.  This is where actions such as updating live 
-        charts should occur.
         """
         pass
         
