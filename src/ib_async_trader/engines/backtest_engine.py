@@ -12,21 +12,18 @@ from ..strategy import Strategy
 class BacktestEngine(Engine):
     
     def __init__(self, strategy: Strategy, datas: dict[str, DataFile], 
-                 time_step: timedelta, start_time: datetime = None, 
-                 end_time: datetime = None, start_cash: float = 10000):
+                 time_step: timedelta, start_time: datetime, end_time: datetime,
+                 start_cash: float = 10000):
         super().__init__(strategy, datas)
         
         self.broker = BacktestBroker(datas, start_cash)
         self.strategy.broker = self.broker
+        self.start_time = start_time
+        self.end_time = end_time
         
         self.walltime_start: int = None
         self.walltime_end: int = None
         self.run_walltime: int = None
-        
-        # Get the start and end time of the backtest
-        first_data: DataFile = next(iter(self.datas.items()))
-        self.start_time: datetime = start_time or first_data.get_start_time()
-        self.end_time: datetime = end_time or first_data.get_end_time()
 
         # Set the current time for the backtest and the Strategy 
         self.time_step = time_step

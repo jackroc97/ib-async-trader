@@ -38,14 +38,15 @@ class Data:
             return None
     
     
-    def get_start_time(self) -> datetime:
-        start_time: pd.Timestamp = self._df.index[0]
-        return start_time.to_pydatetime()
-    
-    
-    def get_end_time(self) -> datetime:
-        end_time: pd.Timestamp = self._df.index[-1]
-        return end_time.to_pydatetime()
+    def get_last(self, name: str):
+        last_time = self._df.index.asof(self.time_now)
+        idx = self._df.index.get_loc(last_time)
+        return self._df.iloc[idx][name]
+
+
+    def exists(self, time: datetime=None):
+        time = time or self.time_now
+        return time in self._df.index
     
     
     def as_df(self) -> pd.DataFrame:

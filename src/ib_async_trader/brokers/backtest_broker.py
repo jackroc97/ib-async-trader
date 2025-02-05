@@ -138,6 +138,7 @@ class BacktestBroker(Broker):
     def _get_trade_cash_effect(self, trade: ib.Trade) -> float:
         coeff = -1 if trade.order.action == "BUY" else 1
         symbol = trade.contract.symbol
+        last_price = self.datas[symbol].get_last("close")
         if type(trade.contract) in [ib.Option, ib.FuturesOption]:
             
             exp_dt = self._get_contract_expiration_dt(trade.contract)
@@ -154,13 +155,16 @@ class BacktestBroker(Broker):
             if t <= 0:
                 t = 1E-12
 
-            c, p = BlackScholes.call_put_price(self.datas[symbol].get("close"),
+            last_iv = self.datas[symbol].get_last("iv")
+            c, p = BlackScholes.call_put_price(last_price,
                                                 trade.contract.strike, 
-                                                t, self.datas[symbol].get("iv"))    
+                                                t, 
+                                                last_iv)    
             price = c if trade.contract.right in ["CALL", "C"] else p
         else:
-            price = self.datas[symbol].get("close")
+            price = last_price
             
+        # TODO: warn if no multiplier
         return coeff * trade.order.totalQuantity * trade.contract.multiplier \
             * price
         
