@@ -63,4 +63,4 @@ class DataStream(Data):
             self._df = bars_df
             self.time_now = self._df.iloc[-1].name
             
-        self.is_first_update = False
+            self.is_first_update = False
