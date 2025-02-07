@@ -21,6 +21,7 @@ class IBLiveTradeEngine(Engine):
         self.port = port
         self.client_id = client_id
         self.ib = ib.IB()
+        self.strategy_started = False
                 
     
     def run(self) -> None:
@@ -51,6 +52,7 @@ class IBLiveTradeEngine(Engine):
 
         # Call strategy on_start
         self.strategy.on_start()
+        self.strategy_started = True
                 
         # Schedule the tick event at the requested interval
         start_time = datetime.now()
@@ -66,7 +68,9 @@ class IBLiveTradeEngine(Engine):
     
     
     def stop(self) -> None:
-        self.strategy.on_finish()
+        if self.strategy_started:
+            self.strategy.on_finish()
+            
         self.ib.disconnect()
         sys.exit()
         
