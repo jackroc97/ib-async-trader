@@ -23,23 +23,8 @@ class IBLiveTradeEngine(Engine):
         self.ib = ib.IB()
         self.strategy_started = False
                 
-    
-    def run(self) -> None:
-        try:
-            asyncio.run(self._run_async())
-            
         
-        except KeyboardInterrupt:
-            print("\nStop requested by user.")
-            
-        except Exception as e:
-            print(e)
-        
-        finally:
-            self.stop()
-        
-        
-    async def _run_async(self) -> None:
+    async def run(self) -> None:
         # Initialize the broker
         self.strategy.broker = IBLiveTradeBroker(self.ib)
 
@@ -62,10 +47,17 @@ class IBLiveTradeEngine(Engine):
                                             end_time, 
                                             self.tick_rate_s)
         
-        # Call strategy tick function at each interval
-        async for t in time_range:    
-            self.strategy.time_now = t            
-            await self.strategy.tick()
+        try:
+            # Call strategy tick function at each interval
+            async for t in time_range:    
+                self.strategy.time_now = t            
+                await self.strategy.tick()
+                
+        except KeyboardInterrupt:
+            print("\nStop requested by user.")
+        
+        finally:
+            self.stop()
     
     
     def stop(self) -> None:
