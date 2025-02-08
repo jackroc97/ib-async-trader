@@ -13,7 +13,12 @@ class Data:
         self.time_now: datetime = None
         self.strategy: Strategy = None
         self._df: pd.DataFrame = None
+        self.on_update: callable = None
         
+    
+    def initialize(self, on_update: callable = None):
+        self.on_update = on_update
+    
         
     def get(self, name: str, bars_ago: int = 0) -> any:
         """

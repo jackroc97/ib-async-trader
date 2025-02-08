@@ -8,11 +8,9 @@ from ..data import Data
  
 class DataFile(Data):
     
-    def __init__(self, contract: Contract, file_path: str, on_update: callable = None):
+    def __init__(self, contract: Contract, file_path: str):
         super().__init__(contract)
-        
-        self.on_update = on_update
-        
+                
         # Read data from the file
         df = pd.read_csv(file_path)
         
