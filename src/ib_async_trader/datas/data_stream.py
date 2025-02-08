@@ -34,6 +34,10 @@ class DataStream(Data):
         
                 
     async def _on_update(self, bars: list[RealTimeBar], has_new: bool):
+        if len(bars) < 1:
+            print("WARNING: Data updated but no bars were provided.")
+            return
+        
         if has_new:
             
             # Convert RealTimeBar list to dataframe
