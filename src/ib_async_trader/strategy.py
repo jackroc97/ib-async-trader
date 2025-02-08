@@ -1,3 +1,5 @@
+import pandas as pd
+
 from datetime import datetime
 
 from .broker import Broker
@@ -45,3 +47,6 @@ class Strategy:
         """
         pass
     
+    
+    def on_new_data(data_id: str, df: pd.DataFrame, update_num: int):
+        pass
