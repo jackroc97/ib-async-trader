@@ -7,7 +7,7 @@ from ib_async import Contract
 class Data:
     
     def __init__(self, contract: Contract):
-        self._df: pd.DataFrame = None
+        self._df = pd.DataFrame()
         self.time_now: datetime = None
         self.contract = contract
         
