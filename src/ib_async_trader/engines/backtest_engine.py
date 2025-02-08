@@ -31,7 +31,6 @@ class BacktestEngine(Engine):
         self.strategy.time_now = self.time_now
 
         
-        
     def run(self) -> tuple[list, list]:
         """
         The `Backtest.run()` method is the main loop of the backtest.  Each 
@@ -50,6 +49,9 @@ class BacktestEngine(Engine):
         
         # Initialize the account with the backtest start time.
         self.broker.initialize(self.start_time)
+        
+        for _, data in self.datas.items():
+            data.initialize(self.strategy.on_data_update)
         
         self.strategy.on_start()
         

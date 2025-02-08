@@ -8,8 +8,10 @@ from ..data import Data
  
 class DataFile(Data):
     
-    def __init__(self, contract: Contract, file_path: str, process_data: callable = None):
+    def __init__(self, contract: Contract, file_path: str, on_update: callable = None):
         super().__init__(contract)
+        
+        self.on_update = on_update
         
         # Read data from the file
         df = pd.read_csv(file_path)
@@ -25,13 +27,16 @@ class DataFile(Data):
         # TODO: Probably need to do this for more than just the iv column
         df["iv"] = df["iv"].interpolate(method="linear")
         
-        if process_data:
-            self._df = process_data(df, 7)
-        else: 
-            self._df = df
-        
+        self._df = df
         self.time_now = self._df.index[0]
         
+    
+    def initialize(self, on_update = None):
+        super().initialize(on_update)
+        
+        if self.on_update:
+            self._df = self.on_update(self.contract.symbol, self._df)
+    
         
     def set_time(self, time_now: datetime):
         self.time_now = time_now

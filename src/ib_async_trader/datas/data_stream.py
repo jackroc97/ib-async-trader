@@ -10,20 +10,19 @@ class DataStream(Data):
     def __init__(self, 
                  contract: Contract, 
                  bar_size_s: int, 
-                 what_to_show: str = "TRADES",
-                 process_data: callable = None, 
-                 process_data_args: dict = {}):
+                 what_to_show: str = "TRADES"):
         super().__init__(contract)
         self.bar_size_s = bar_size_s 
         self.what_to_show = what_to_show
-        self.process_data = process_data
-        self.process_data_args = process_data_args
+        
         self.ib: IB = None
         self._five_sec_bars: BarDataList = None
         self.is_first_update = True
         
         
-    async def initialize(self, ib: IB) -> None:
+    async def initialize(self, ib: IB, on_update: callable = None) -> None:
+        super().initialize(on_update)
+        
         self.ib = ib
         await self.ib.qualifyContractsAsync(self.contract)
         self._five_sec_bars = await self.ib.reqHistoricalDataAsync(
@@ -64,8 +63,8 @@ class DataStream(Data):
                 }).dropna(how='any')
     
             # Do any user-specified processing here
-            if self.process_data:
-               bars_df = await self.process_data(bars_df, self.is_first_update, **self.process_data_args)
+            if self.on_update:
+               bars_df = self.on_update(self.contract.symbol, bars_df)
     
             # Update the data on the strategy, set current tick time
             # and call tick() function 

@@ -1,3 +1,5 @@
+import pandas as pd
+
 from datetime import datetime
 
 from .broker import Broker
@@ -26,13 +28,30 @@ class Strategy:
         pass
         
 
-    async def tick(self):
+    async def tick(self) -> None:
         """
         The `Strategy.tick()` method is where a user will define the basic logic 
         that runs a particular strategy.  The `tick()` method is called exactly 
         once per timestep in a backtest, and is where the `Strategy` may
         interact with an `Account` to submit orders based on current market 
         conditions.
+        """
+        pass
+        
+        
+    def on_data_update(self, data_id: str, df: pd.DataFrame) -> None:
+        """
+        This will be called whenever data is updated.  For backtesting, it is
+        called once at the beginning of the backtest, to improve performance.
+        For live trades it is called whenever new data is available.
+
+        The idea is that this will be used to perform any analysis or 
+        calculations on the data that are needed for the strategy.
+
+        Args:
+            data_id (str): The ID for the data that has been udpated (since 
+                strategies can have multiple datas that they read from).
+            df (pd.DataFrame): The updated data.
         """
         pass
         

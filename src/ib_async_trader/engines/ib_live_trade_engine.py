@@ -33,7 +33,7 @@ class IBLiveTradeEngine(Engine):
         # Initialize the data streams
         data: DataStream
         for _, data in self.strategy.datas.items():
-            await data.initialize(self.ib)
+            await data.initialize(self.ib, self.strategy.on_data_update)
 
         # Call strategy on_start
         self.strategy.on_start()
