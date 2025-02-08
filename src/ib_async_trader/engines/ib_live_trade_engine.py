@@ -1,4 +1,3 @@
-import asyncio
 import ib_async as ib
 import sys
 
