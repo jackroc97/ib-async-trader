@@ -184,7 +184,7 @@ class BacktestBroker(Broker):
             case ib.MarketOrder:
                 can_execute = is_valid and (self.cash_balance + cash_eff) > 0
             case ib.LimitOrder:
-                last_price = self.datas[trade.contract.symbol].get("close")
+                last_price = self.datas[trade.contract.symbol].get_last("close")
                 is_in_limit = (order.action == "BUY" and last_price <= order.lmtPrice) \
                     or (order.action == "SELL" and last_price >= order.lmtPrice)
                 can_execute = is_valid and is_in_limit and (self.cash_balance + cash_eff) > 0
@@ -213,7 +213,7 @@ class BacktestBroker(Broker):
                                            new_qty, new_avg_cost)
                 self.open_positions.remove(old_position)
                 
-        if new_position.position > 0:
+        if abs(new_position.position) > 0:
             self.open_positions.append(new_position)    
         
     
