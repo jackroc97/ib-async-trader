@@ -27,12 +27,13 @@ class IBLiveTradeEngine(Engine):
     def run(self) -> None:
         try:
             asyncio.run(self._run_async())
+            
         
         except KeyboardInterrupt:
             print("\nStop requested by user.")
             
         except Exception as e:
-            print(repr(e))
+            print(e)
         
         finally:
             self.stop()
