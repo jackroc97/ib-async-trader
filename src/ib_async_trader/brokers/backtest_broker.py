@@ -186,9 +186,9 @@ class BacktestBroker(Broker):
                 if not can_execute:
                     self._cancel_trade(trade)
             case ib.LimitOrder:
-                last_price = self.datas[trade.contract.symbol].get_last("close")
-                is_in_limit = (order.action == "BUY" and last_price <= order.lmtPrice) \
-                    or (order.action == "SELL" and last_price >= order.lmtPrice)
+                lmt_cash_effect = trade.order.totalQuantity * trade.contract.multiplier * order.lmtPrice 
+                is_in_limit = (order.action == "BUY" and abs(cash_eff) <= lmt_cash_effect) \
+                    or (order.action == "SELL" and  abs(cash_eff) >= lmt_cash_effect)
                 can_execute = is_valid and is_in_limit and (self.cash_balance + cash_eff) > 0
             case ib.StopLimitOrder:
                 raise NotImplementedError()
