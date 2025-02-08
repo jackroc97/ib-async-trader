@@ -177,7 +177,25 @@ class BacktestBroker(Broker):
         # Do we have enough cash or margin to execute this trade?
         cash_eff = self._get_trade_cash_effect(trade)
         
-        return is_valid and (self.cash_balance + cash_eff) > 0
+        can_execute = False
+        
+        order = trade.order
+        match type(order):
+            case ib.MarketOrder:
+                can_execute = is_valid and (self.cash_balance + cash_eff) > 0
+            case ib.LimitOrder:
+                last_price = self.datas[trade.contract.symbol].get("close")
+                is_in_limit = (order.action == "BUY" and last_price <= order.lmtPrice) \
+                    or (order.action == "SELL" and last_price >= order.lmtPrice)
+                can_execute = is_valid and is_in_limit and (self.cash_balance + cash_eff) > 0
+            case ib.StopLimitOrder:
+                raise NotImplementedError()
+            case ib.StopOrder:
+                raise NotImplementedError()
+            case ib.BracketOrder:
+                raise NotImplementedError()
+                
+        return can_execute
 
     
     def _update_positions(self, new_position: ib.Position) -> bool:
