@@ -183,6 +183,8 @@ class BacktestBroker(Broker):
         match type(order):
             case ib.MarketOrder:
                 can_execute = is_valid and (self.cash_balance + cash_eff) > 0
+                if not can_execute:
+                    self._cancel_trade(trade)
             case ib.LimitOrder:
                 last_price = self.datas[trade.contract.symbol].get_last("close")
                 is_in_limit = (order.action == "BUY" and last_price <= order.lmtPrice) \
@@ -293,7 +295,4 @@ class BacktestBroker(Broker):
             
             if self._can_execute_trade(trade):
                 self._execute_trade(trade)
-                del self.open_trades[i]
-            else:
-                self._cancel_trade(trade)
                 del self.open_trades[i]
