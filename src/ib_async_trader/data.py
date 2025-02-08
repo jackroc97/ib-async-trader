@@ -3,15 +3,12 @@ import pandas as pd
 from datetime import datetime
 from ib_async import Contract
 
-from strategy import Strategy
-
 
 class Data:
     
     def __init__(self, contract: Contract):
         self.contract = contract
         self.time_now: datetime = None
-        self.strategy: Strategy = None
         self._df: pd.DataFrame = None
         self.on_update: callable = None
         
