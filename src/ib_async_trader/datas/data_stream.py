@@ -7,10 +7,15 @@ from ..data import Data
 
 class DataStream(Data):
         
-    def __init__(self, contract: Contract, time_interval_s: int, 
-                 process_data: callable = None, process_data_args: dict = {}):
+    def __init__(self, 
+                 contract: Contract, 
+                 bar_size_s: int, 
+                 what_to_show: str = "TRADES",
+                 process_data: callable = None, 
+                 process_data_args: dict = {}):
         super().__init__(contract)
-        self.time_interval_s = time_interval_s 
+        self.bar_size_s = bar_size_s 
+        self.what_to_show = what_to_show
         self.process_data = process_data
         self.process_data_args = process_data_args
         self.ib: IB = None
@@ -23,7 +28,7 @@ class DataStream(Data):
         await self.ib.qualifyContractsAsync(self.contract)
         self._five_sec_bars = await self.ib.reqHistoricalDataAsync(
             self.contract, endDateTime="", durationStr="2 D",
-            barSizeSetting="5 secs", whatToShow="TRADES", useRTH=False, 
+            barSizeSetting="5 secs", whatToShow=self.what_to_show, useRTH=False, 
             keepUpToDate=True)        
         self._five_sec_bars.updateEvent += self._on_update
         
@@ -45,7 +50,7 @@ class DataStream(Data):
             bars_df.drop('date', axis=1, inplace=True)
         
             # Resample the data to the requested time interval
-            bars_df = bars_df.resample(f"{self.time_interval_s}s").agg(
+            bars_df = bars_df.resample(f"{self.bar_size_s}s").agg(
                 {
                     'open':'first',
                     'high':'max',
