@@ -10,10 +10,12 @@ class DataStream(Data):
     def __init__(self, 
                  contract: Contract, 
                  bar_size_s: int, 
-                 what_to_show: str = "TRADES"):
+                 what_to_show: str = "TRADES", 
+                 days_back: int = 1):
         super().__init__(contract)
         self.bar_size_s = bar_size_s 
         self.what_to_show = what_to_show
+        self.days_back = days_back
         
         self.ib: IB = None
         self._five_sec_bars: BarDataList = None
@@ -26,7 +28,7 @@ class DataStream(Data):
         self.ib = ib
         await self.ib.qualifyContractsAsync(self.contract)
         self._five_sec_bars = await self.ib.reqHistoricalDataAsync(
-            self.contract, endDateTime="", durationStr="2 D",
+            self.contract, endDateTime="", durationStr=f"{self.days_back} D",
             barSizeSetting="5 secs", whatToShow=self.what_to_show, useRTH=False, 
             keepUpToDate=True)        
         self._five_sec_bars.updateEvent += self._on_update
