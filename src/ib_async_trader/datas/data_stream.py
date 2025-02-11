@@ -23,6 +23,7 @@ class DataStream(Data):
         
         
     async def initialize(self, ib: IB, on_update: callable = None) -> None:
+        print(f"Initializing data stream for {self.contract.symbol}")
         super().initialize(on_update)
         
         self.ib = ib

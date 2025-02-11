@@ -1,5 +1,6 @@
 import ib_async as ib
 import sys
+import traceback
 
 from datetime import datetime, timedelta
 
@@ -54,6 +55,9 @@ class IBLiveTradeEngine(Engine):
                 
         except KeyboardInterrupt:
             print("\nStop requested by user.")
+        
+        except Exception as e:
+            traceback.print_exception(e)
         
         finally:
             self.stop()
