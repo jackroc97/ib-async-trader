@@ -9,7 +9,7 @@ class Data:
     def __init__(self, contract: Contract):
         self.contract = contract
         self.time_now: datetime = None
-        self._df: pd.DataFrame = None
+        self._df: pd.DataFrame = pd.DataFrame()
         self.on_update: callable = None
         
     

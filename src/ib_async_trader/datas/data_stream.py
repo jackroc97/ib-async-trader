@@ -23,11 +23,12 @@ class DataStream(Data):
         
         
     async def initialize(self, ib: IB, on_update: callable = None) -> None:
-        print(f"Initializing data stream for {self.contract.symbol}")
         super().initialize(on_update)
         
         self.ib = ib
         await self.ib.qualifyContractsAsync(self.contract)
+        print(f"Initializing data stream for {self.contract.symbol}")
+
         self._five_sec_bars = await self.ib.reqHistoricalDataAsync(
             self.contract, endDateTime="", durationStr=f"{self.days_back} D",
             barSizeSetting="5 secs", whatToShow=self.what_to_show, useRTH=False, 
