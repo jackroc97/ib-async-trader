@@ -52,8 +52,20 @@ class DataStream(Data):
             # Dates from ibkr don't appear to account for DST
             # This massages the date data to account for DST and then 
             # converts the DataFrame index to a DatetimeIndex
+            # TODO: May want to customize which timezone we convert to
             bars_df.index = pd.DatetimeIndex(
                 bars_df["date"].dt.tz_convert("US/Eastern"))
+            
+            # Calculate the UTC offset for each timestamp
+            utc_offsets = bars_df.index.map(lambda ts: ts.utcoffset())
+
+            # Convert the index to UTC and remove the timezone
+            bars_df.index = bars_df.index.tz_convert('UTC').tz_localize(None)
+
+            # Add the previously calculated UTC offset back to the index
+            bars_df.index = bars_df.index + utc_offsets
+
+            # Drop the old date field
             bars_df.drop('date', axis=1, inplace=True)
         
             # Resample the data to the requested time interval
