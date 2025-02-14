@@ -39,7 +39,7 @@ class Strategy:
         pass
         
         
-    def on_data_update(self, data_id: str, df: pd.DataFrame) -> None:
+    def on_data_update(self, data_id: str, df: pd.DataFrame) -> pd.DataFrame:
         """
         This will be called whenever data is updated.  For backtesting, it is
         called once at the beginning of the backtest, to improve performance.
@@ -53,7 +53,7 @@ class Strategy:
                 strategies can have multiple datas that they read from).
             df (pd.DataFrame): The updated data.
         """
-        pass
+        return df
         
         
     def on_finish(self) -> None:
