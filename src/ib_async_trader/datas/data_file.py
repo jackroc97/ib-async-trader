@@ -15,9 +15,12 @@ class DataFile(Data):
         df = pd.read_csv(file_path)
         
         # Convert the date column to datetime
-        df["date"] = pd.to_datetime(df["date"], utc=True)
-        df["date"] = df["date"].dt.tz_convert("US/Eastern")
-        df["date"] = df["date"].dt.tz_localize(None)
+        # I don't like the way pandas converts dates/timezones, so
+        # we will always assume data is given in "local time" and we can 
+        # ignore the timezone.  Ensuring that the dates/times are correct 
+        # in the data is left as an exercise to the reader.
+        df["date"]  = df["date"].str[0:19]
+        df["date"] = pd.to_datetime(df["date"])
         df.index = pd.DatetimeIndex(df["date"])
         
         # Cleanup duplicates and interpolate missing values

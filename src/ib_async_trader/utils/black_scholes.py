@@ -59,7 +59,7 @@ class BlackScholes:
             float: The time between `exp_dt` and `t` expressed in fractions of a 
             year.
         """
-        return (exp_dt - t).seconds / (cls.DAYS_PER_YEAR * cls.SECONDS_PER_DAY)
+        return (exp_dt - t).total_seconds() / (cls.DAYS_PER_YEAR * cls.SECONDS_PER_DAY)
     
     
     @classmethod

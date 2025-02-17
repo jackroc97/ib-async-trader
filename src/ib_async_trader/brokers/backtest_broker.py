@@ -111,9 +111,9 @@ class BacktestBroker(Broker):
     
     def _get_contract_expiration_dt(self, contract: ib.Contract) -> datetime:
         return datetime.strptime(contract.lastTradeDateOrContractMonth, 
-                                 "%Y%m%d").replace(hour=15, 
-                                                   minute=59, 
-                                                   second=59, 
+                                 "%Y%m%d").replace(hour=16, 
+                                                   minute=0, 
+                                                   second=0, 
                                                    microsecond=0,
                                                    tzinfo=self.time_now.tzinfo)
 
