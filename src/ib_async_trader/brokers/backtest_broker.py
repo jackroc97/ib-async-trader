@@ -130,6 +130,7 @@ class BacktestBroker(Broker):
                 # simulate expiration.  This assumes that positions are not 
                 # assigned, but rather all contracts settle to cash.
                 action = "SELL" if pos.position > 0 else "BUY"
+                coeff = 1 if action == "SELL" else -1
                 closing_ord = ib.MarketOrder(action, pos.position * -1)
                 closing_trade = ib.Trade(pos.contract, closing_ord)
                 self._execute_trade(closing_trade)
