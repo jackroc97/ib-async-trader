@@ -87,7 +87,7 @@ class BacktestBroker(Broker):
     
     def _get_historical_options_chain(self, contract: ib.Contract, days_ahead: int = 1) -> list[ib.OptionChain]:
         chain = self.datas[contract.symbol]._historical_options_data.get_options_chain_as_of(self.time_now, days_ahead)
-        chain["EXPIRE_DATE"] = chain["EXPIRE_DATE"].dt.strftime("%Y%m%d")
+        chain["EXPIRE_DATE"] = chain["EXPIRE_DATE"].str.replace("-", "")
         return [ib.OptionChain(contract.exchange, contract.conId, 
                                contract.tradingClass, contract.multiplier,
                                chain["EXPIRE_DATE"].unique(),
