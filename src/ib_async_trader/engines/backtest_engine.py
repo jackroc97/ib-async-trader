@@ -64,6 +64,14 @@ class BacktestEngine(Engine):
             # Get the current state (time and stock quote data at that time).
             self.strategy.time_now = self.time_now
             
+            # Set each data's perception of the current time
+            data: DataFile
+            for _, data in self.datas.items():
+                data.set_time(self.time_now)
+            
+            # Set the broker's perception of the current time
+            self.broker.time_now = self.time_now
+            
             # Engage the strategy, which will decide what actions to take on the 
             # account given the current state.
             asyncio.run(self.strategy.tick())
@@ -72,15 +80,10 @@ class BacktestEngine(Engine):
             # taken on it by the stategy.  The update will return lists of 
             # actions that were taken, which will be stored in prev_actions
             # and passed to the strategy on the next tick.
-            self.broker.update(self.time_now)
+            self.broker.update()
             
             # Advance the current time
             self.time_now += self.time_step
-            
-            # Advance each data's perception of the current time
-            data: DataFile
-            for _, data in self.datas.items():
-                data.set_time(self.time_now)
             
 
         self.walltime_end = time()
