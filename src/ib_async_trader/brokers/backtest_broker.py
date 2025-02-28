@@ -3,7 +3,7 @@ import ib_async as ib
 from datetime import datetime, timedelta
 
 from ..broker import Broker
-from ..datas.data_file import DataFile
+from ..datas.data_file import DataFile, HistoricalOptionsData, OptionsModelType
 from ..utils.black_scholes import BlackScholes
 
 
@@ -62,7 +62,21 @@ class BacktestBroker(Broker):
         return self.open_trades
     
     
-    async def get_options_chain(self, contract: ib.Contract) -> list[ib.OptionChain]:
+    async def get_options_chain(self, 
+                                contract: ib.Contract, 
+                                days_ahead: int = 1) -> list[ib.OptionChain]:
+        match (self.datas[contract.symbol].options_model):
+            case OptionsModelType.BLACK_SCHOLES:
+                return self._get_black_scholes_options_chain(contract)
+            case OptionsModelType.HISTORICAL_DATA:
+                return self._get_historical_options_chain(contract, days_ahead)
+            case OptionsModelType.NONE:
+                print("WARNING: Attempted to get options chain for a contract with no options model.")
+                return []
+        
+        
+    def _get_black_scholes_options_chain(self, 
+                                         contract: ib.Contract) -> list[ib.OptionChain]:
         expirations = [(self.time_now + timedelta(days=x)).strftime("%Y%m%d") \
             for x in range(30)]
         atm_strk = int(5 * round(self.datas[contract.symbol].get("close") / 5))
@@ -70,6 +84,14 @@ class BacktestBroker(Broker):
         return [ib.OptionChain(contract.exchange, contract.conId, 
                                contract.tradingClass, contract.multiplier, 
                                expirations, strikes)]
+        
+    
+    def _get_historical_options_chain(self, contract: ib.Contract, days_ahead: int = 1) -> list[ib.OptionChain]:
+        chain = self.datas[contract.symbol]._historical_options_data.get_options_chain_as_of(self.time_now, days_ahead)
+        return [ib.OptionChain(chain, contract.exchange, contract.conId, 
+                               contract.tradingClass, contract.multiplier,
+                               chain["EXPIRE_DATE"].unique(),
+                               chain["STRIKE"].unique())]
 
 
     async def qualify_contracts(self, *contracts: ib.Contract) -> list[ib.Contract]:
@@ -148,32 +170,64 @@ class BacktestBroker(Broker):
         last_price = self.datas[symbol].get_last("close")
         if type(trade.contract) in [ib.Option, ib.FuturesOption]:
             
-            exp_dt = self._get_contract_expiration_dt(trade.contract)
+            match(self.datas[symbol].options_model):
+                case OptionsModelType.BLACK_SCHOLES:
+                    price = self._get_black_scholes_option_price(trade, symbol, last_price)
+                case OptionsModelType.HISTORICAL_DATA:
+                    price = self._get_historical_options_data_price(trade, symbol)
+                case OptionsModelType.NONE:
+                    print("WARNING: Attempted to get option price for a contract with no options model.")
+                    return 0
             
-            # Get the time to expiration (t) and the theoretical call or put 
-            # price (c, p)
-            t = BlackScholes.time_to_expiration_years(exp_dt, self.time_now)
-        
-            # To avoid a division by zero error, never let t reach exactly 0...
-            # just set it to a "sufficiently small" number.
-            # NOTE: This will generate "bogus" values for option prices after 
-            # they have expired, since the price of the underlying will continue
-            # to move but time to expiration has been frozen.
-            if t <= 0:
-                t = 1E-12
-
-            last_iv = self.datas[symbol].get_last("iv")
-            c, p = BlackScholes.call_put_price(last_price,
-                                                trade.contract.strike, 
-                                                t, 
-                                                last_iv)    
-            price = c if trade.contract.right in ["CALL", "C"] else p
         else:
             price = last_price
             
         # TODO: warn if no multiplier
         return coeff * trade.order.totalQuantity * trade.contract.multiplier \
             * price
+        
+        
+    def _get_black_scholes_option_price(self, 
+                                        trade: ib.Trade, 
+                                        symbol: str,
+                                        last_price: float) -> float:
+        
+        exp_dt = self._get_contract_expiration_dt(trade.contract)
+            
+        # Get the time to expiration (t) and the theoretical call or put 
+        # price (c, p)
+        t = BlackScholes.time_to_expiration_years(exp_dt, self.time_now)
+        
+        # To avoid a division by zero error, never let t reach exactly 0...
+        # just set it to a "sufficiently small" number.
+        # NOTE: This will generate "bogus" values for option prices after 
+        # they have expired, since the price of the underlying will continue
+        # to move but time to expiration has been frozen.
+        if t <= 0:
+            t = 1E-12
+
+        last_iv = self.datas[symbol].get_last("iv")
+        c, p = BlackScholes.call_put_price(last_price,
+                                            trade.contract.strike, 
+                                            t, 
+                                            last_iv)    
+        return c if trade.contract.right in ["CALL", "C"] else p
+        
+    
+    def _get_historical_options_data_price(self, trade: ib.Trade, symbol: str) -> float:
+        # TODO: This gets the entire price series for the option every time we
+        # want to query the price.  There are two optimizations that could be 
+        # added to this:
+        # 1) Cache the price series for the option in memory the first time we
+        # query for the price
+        # 2) Update the method on HistoricalOptionsData to allow us to query for
+        # price at a specific time
+        prices = self.datas[symbol]._historical_options_data.get_price_timeseries_for_option(
+            datetime.strptime(trade.contract.lastTradeDateOrContractMonth, "%Y-%m-%d"), 
+            trade.contract.strike, 
+            trade.contract.right)
+        col = trade.contract.right + "_LAST"
+        return prices.asof(self.time_now)[col]
         
         
     def _can_execute_trade(self, trade: ib.Trade) -> bool:
