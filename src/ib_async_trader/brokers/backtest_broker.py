@@ -215,19 +215,12 @@ class BacktestBroker(Broker):
         
     
     def _get_historical_options_data_price(self, trade: ib.Trade, symbol: str) -> float:
-        # TODO: This gets the entire price series for the option every time we
-        # want to query the price.  There are two optimizations that could be 
-        # added to this:
-        # 1) Cache the price series for the option in memory the first time we
-        # query for the price
-        # 2) Update the method on HistoricalOptionsData to allow us to query for
-        # price at a specific time
-        prices = self.datas[symbol]._historical_options_data.get_price_timeseries_for_option(
+        price = self.datas[symbol]._historical_options_data.get_price_for_option(
+            self.time_now,
             datetime.strptime(trade.contract.lastTradeDateOrContractMonth, "%Y-%m-%d"), 
             trade.contract.strike, 
             trade.contract.right)
-        col = trade.contract.right + "_LAST"
-        return prices.asof(self.time_now)[col]
+        return price
         
         
     def _can_execute_trade(self, trade: ib.Trade) -> bool:
