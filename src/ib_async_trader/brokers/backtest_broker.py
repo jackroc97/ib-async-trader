@@ -1,5 +1,8 @@
 import ib_async as ib
 
+import pandas as pd
+import numpy as np
+
 from datetime import datetime, timedelta
 
 from ..broker import Broker
@@ -87,9 +90,12 @@ class BacktestBroker(Broker):
     
     def _get_historical_options_chain(self, contract: ib.Contract, days_ahead: int = 1) -> list[ib.OptionChain]:
         chain = self.datas[contract.symbol]._historical_options_data.get_options_chain_as_of(self.time_now, days_ahead)
+        expirations = np.unique(
+            pd.to_datetime(chain['EXPIRE_UNIX'], unit='s').dt.strftime('%Y%m%d')
+        )
         return [ib.OptionChain(contract.exchange, contract.conId, 
                                contract.tradingClass, contract.multiplier,
-                               chain["EXPIRE_UNIX"].unique(),
+                               expirations,
                                chain["STRIKE"].unique())]
 
 
