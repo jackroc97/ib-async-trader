@@ -222,7 +222,7 @@ class BacktestBroker(Broker):
     def _get_historical_options_data_price(self, trade: ib.Trade, symbol: str) -> float:
         price = self.datas[symbol]._historical_options_data.get_price_for_option(
             self.time_now,
-            datetime.strptime(trade.contract.lastTradeDateOrContractMonth, "%Y-%m-%d"), 
+            datetime.strptime(trade.contract.lastTradeDateOrContractMonth, "%Y%m%d"), 
             trade.contract.strike, 
             trade.contract.right)
         return price
