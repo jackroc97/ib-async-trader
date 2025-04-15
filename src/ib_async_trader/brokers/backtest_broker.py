@@ -230,6 +230,23 @@ class BacktestBroker(Broker):
         
     def _can_execute_trade(self, trade: ib.Trade) -> bool:
         
+        # Added to catch cases where quotes are not available for the contract.
+        # This essentially assumes that we are not in the trading session and
+        # so no trades can be executed.
+        has_quotes = False
+        match type(trade.contract):
+            case ib.Option | ib.FuturesOption:
+                has_quotes = self.datas[trade.contract.symbol]._historical_options_data.has_quote_data(
+                    self.time_now,
+                    datetime.strptime(trade.contract.lastTradeDateOrContractMonth, "%Y%m%d"), 
+                    trade.contract.strike, 
+                    trade.contract.right)
+            case _:
+                has_quotes = self.datas[trade.contract.symbol].exists(self.time_now)
+                
+        if not has_quotes:
+            return False
+        
         # Is the contract still valid (i.e., not expired)?
         is_valid = not self._is_contract_expired(trade.contract)
         

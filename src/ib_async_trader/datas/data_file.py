@@ -69,6 +69,10 @@ class DataFile(Data):
 
 class HistoricalOptionsData:
 
+    def has_quote_data(self, quote_time: datetime, exp_date: date, strike: float, right: str) -> bool:
+        pass
+    
+
     def get_options_chain_as_of(self, quote_time: datetime, days_ahead: int = 1) -> pd.DataFrame:
         pass
     
@@ -115,6 +119,26 @@ class HistoricalOptionsDataSql:
         
         self._price_data_cache = {}
         
+    
+    def has_quote_data(self, quote_time: datetime, exp_date: date, strike: float, right: str) -> bool:
+        quote_unix = int(quote_time.timestamp())
+        
+        if (exp_date, strike, right) in self._price_data_cache.keys():
+            return quote_unix in self._price_data_cache[(exp_date, strike, right)].index
+        else: 
+            exp_dt = datetime.combine(exp_date, time(16, 0, 0)) # Assuming 4 PM is the expiration time
+            expire_time_unix = int(exp_dt.timestamp())
+            query = f"""
+                SELECT COUNT(*) FROM quotes
+                WHERE 
+                    QUOTE_UNIXTIME == {quote_unix}
+                    AND EXPIRE_UNIX == {expire_time_unix}
+                    AND STRIKE == {strike}
+            """
+            self._cursor.execute(query)
+            result = self._cursor.fetchone()
+            return result[0] > 0
+                
                 
     def get_options_chain_as_of(self, quote_time: datetime, days_ahead: int = 1) -> pd.DataFrame:
         quote_time_unix = int(quote_time.timestamp())
@@ -134,9 +158,10 @@ class HistoricalOptionsDataSql:
         exp_dt = datetime.combine(exp_date, time(16, 0, 0)) # Assuming 4 PM is the expiration time
         expire_time_unix = int(exp_dt.timestamp())
     
+        # NOTE: Added DISTINCT since data may contain duplicates
         cols = ["QUOTE_UNIXTIME", "EXPIRE_UNIX", "STRIKE", right + "_LAST", right + "_VOLUME"]
         query = f"""
-            SELECT {','.join(cols)} FROM quotes
+            SELECT DISTINCT {','.join(cols)} FROM quotes
             WHERE 
                 EXPIRE_UNIX == {expire_time_unix}
                 AND STRIKE == {strike}
