@@ -83,6 +83,8 @@ class BacktestBroker(Broker):
             exp_date = datetime.strptime(contract.lastTradeDateOrContractMonth, "%Y%m%d") 
             greeks = self.datas[contract.symbol]._historical_options_data.get_greeks_for_option(self.time_now, exp_date, contract.strike, contract.right)
             all_greeks[contract.localSymbol] = {
+                "expiration": exp_date,
+                "strike": contract.strike,
                 "delta": greeks["delta"],
                 "gamma": greeks["gamma"],
                 "theta": greeks["theta"],
