@@ -77,6 +77,22 @@ class BacktestBroker(Broker):
                 return []
         
         
+    async def get_last_greeks(self, *contracts):
+        all_greeks = {}
+        for contract in contracts:
+            exp_date = datetime.strptime(contract.lastTradeDateOrContractMonth, "%Y%m%d") 
+            greeks = self.datas[contract.symbol]._historical_options_data.get_greeks_for_option(self.time_now, exp_date, contract.strike, contract.right)
+            all_greeks[contract.localSymbol] = {
+                "delta": greeks["delta"],
+                "gamma": greeks["gamma"],
+                "theta": greeks["theta"],
+                "vega": greeks["vega"],
+                "rho": greeks["rho"],
+                "iv": greeks["iv"],
+            }
+        return pd.DataFrame(all_greeks).T
+    
+        
     def _get_black_scholes_options_chain(self, 
                                          contract: ib.Contract) -> list[ib.OptionChain]:
         expirations = [(self.time_now + timedelta(days=x)).strftime("%Y%m%d") \

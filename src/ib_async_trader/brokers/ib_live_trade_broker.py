@@ -1,4 +1,5 @@
 import ib_async as ib
+import pandas as pd
 
 from ..broker import Broker
 
@@ -49,6 +50,22 @@ class IBLiveTradeBroker(Broker):
     async def get_options_chain(self, contract: ib.Contract) -> list[ib.OptionChain]:
         return await self.ib.reqSecDefOptParamsAsync(contract.symbol, contract.exchange, contract.secType, contract.conId)
         
+        
+    async def get_last_greeks(self, *contracts):
+        tickers = await self.ib.reqTickersAsync(*contracts)
+        
+        option_greeks: dict[str, dict] = {}
+        for ticker in tickers:
+            option_greeks[ticker.contract.localSymbol] = {
+                "delta": ticker.lastGreeks.delta,
+                "gamma": ticker.lastGreeks.gamma,
+                "theta": ticker.lastGreeks.theta,
+                "vega": ticker.lastGreeks.vega,
+                "impliedVolatility": ticker.lastGreeks.impliedVol,
+            }
+        
+        return pd.DataFrame(option_greeks).T
+    
     
     async def qualify_contracts(self, *contracts: ib.Contract) -> list[ib.Contract]:
         return await self.ib.qualifyContractsAsync(*contracts)

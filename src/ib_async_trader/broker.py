@@ -1,5 +1,5 @@
 import ib_async as ib
-
+import pandas as pd
 
 class Broker:
     
@@ -46,6 +46,10 @@ class Broker:
     async def get_options_chain(self, contract: ib.Contract) -> list[ib.OptionChain]:
         pass
     
+    
+    async def get_last_greeks(self, *contracts: ib.Contract) -> pd.DataFrame:
+        pass
+        
     
     async def qualify_contracts(self, *contracts: ib.Contract) -> list[ib.Contract]:
         pass

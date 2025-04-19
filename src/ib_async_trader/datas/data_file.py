@@ -118,6 +118,7 @@ class HistoricalOptionsDataSql:
         self._cursor = self._conn.cursor()
         
         self._price_data_cache = {}
+        self._greeks_data_cache = {}
         
     
     def has_quote_data(self, quote_time: datetime, exp_date: date, strike: float, right: str) -> bool:
@@ -169,6 +170,20 @@ class HistoricalOptionsDataSql:
         return pd.read_sql_query(query, self._conn, index_col="QUOTE_UNIXTIME")
     
     
+    def get_greeks_timeseries_for_option(self, exp_date: date, strike: float, right: str) -> pd.DataFrame:
+        exp_dt = datetime.combine(exp_date, time(16, 0, 0))
+        expire_time_unix = int(exp_dt.timestamp())
+        
+        cols = ["QUOTE_UNIXTIME", "EXPIRE_UNIX", "STRIKE", right + "_DELTA", right + "_GAMMA", right + "_VEGA", right + "_THETA", right + "_RHO", right + "_IV"]
+        query = f"""
+            SELECT DISTINCT {','.join(cols)} FROM quotes
+            WHERE 
+                EXPIRE_UNIX == {expire_time_unix}
+                AND STRIKE == {strike}
+        """
+        return pd.read_sql_query(query, self._conn, index_col="QUOTE_UNIXTIME")
+        
+    
     def get_price_for_option(self, quote_time: datetime, exp_date: date, strike: float, right: str) -> float:
         quote_unix = int(quote_time.timestamp())
         if (exp_date, strike, right) in self._price_data_cache.keys():
@@ -181,3 +196,15 @@ class HistoricalOptionsDataSql:
         self._price_data_cache[(exp_date, strike, right)] = df
         return df.loc[quote_unix, right + "_LAST"]
     
+    
+    def get_greeks_for_option(self, quote_time: datetime, exp_date: date, strike: float, right: str) -> pd.DataFrame:
+        quote_unix = int(quote_time.timestamp())
+        if (exp_date, strike, right) in self._greeks_data_cache.keys():
+            return self._greeks_data_cache[(exp_date, strike, right)].loc[quote_unix]
+        
+        df = self.get_greeks_timeseries_for_option(exp_date, strike, right)
+        if df.empty:
+            raise ValueError(f"No data found for option with expiration date {exp_date}, strike {strike}, and right {right}.")
+        
+        self._greeks_data_cache[(exp_date, strike, right)] = df
+        return df.loc[quote_unix]
