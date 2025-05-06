@@ -200,11 +200,17 @@ class HistoricalOptionsDataSql:
     def get_greeks_for_option(self, quote_time: datetime, exp_date: date, strike: float, right: str) -> pd.DataFrame:
         quote_unix = int(quote_time.timestamp())
         if (exp_date, strike, right) in self._greeks_data_cache.keys():
-            return self._greeks_data_cache[(exp_date, strike, right)].loc[quote_unix]
+            if quote_unix in self._greeks_data_cache[(exp_date, strike, right)].index:
+                return self._greeks_data_cache[(exp_date, strike, right)].loc[quote_unix]
+            else:
+                raise ValueError(f"No data found for option with expiration date {exp_date}, strike {strike}, and right {right} at quote time {quote_time}.")
         
         df = self.get_greeks_timeseries_for_option(exp_date, strike, right)
         if df.empty:
             raise ValueError(f"No data found for option with expiration date {exp_date}, strike {strike}, and right {right}.")
         
         self._greeks_data_cache[(exp_date, strike, right)] = df
+        
+        if quote_unix not in df.index:
+            raise ValueError(f"No data found for option with expiration date {exp_date}, strike {strike}, and right {right} at quote time {quote_time}.")
         return df.loc[quote_unix]
